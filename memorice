@@ -1,0 +1,164 @@
+<script>
+const tablero = document.getElementById('game-board');
+const cursoSelect = document.getElementById('curso');
+const nivelSelect = document.getElementById('nivel');
+const scoreBoard = document.getElementById('score-board');
+const highScoreDisplay = document.getElementById('high-score');
+const resetBtn = document.getElementById('reset-btn');
+const timerDisplay = document.getElementById('timer');
+const modoProfeBtn = document.getElementById('mode-profe');
+const explicacionBox = document.getElementById('explicacion');
+
+let cartas = [];
+let primera = null;
+let segunda = null;
+let puntaje = 0;
+let highScore = 0;
+let modoProfe = false;
+let tiempoRestante = 0;
+let temporizador;
+
+const datos = {
+  "1": {
+    facil: [["2+2", "4"], ["5-3", "2"], ["10÷2", "5"], ["6×1", "6"], ["3+1", "4"], ["8-6", "2"], ["9-4", "5"]],
+    medio: [["3×4", "12"], ["18÷2", "9"], ["7+6", "13"], ["20-8", "12"], ["6×3", "18"], ["15÷3", "5"], ["14-9", "5"]],
+    dificil: [["x+3=7", "x=4"], ["2x=10", "x=5"], ["x-5=2", "x=7"], ["3x=9", "x=3"], ["x/2=6", "x=12"], ["x+8=10", "x=2"], ["5x=25", "x=5"]]
+  },
+  "2": {
+    facil: [["1/2 + 1/2", "1"], ["2×2", "4"], ["12÷3", "4"], ["5+3", "8"], ["7-2", "5"], ["3×2", "6"], ["10-6", "4"]],
+    medio: [["4×5", "20"], ["30÷6", "5"], ["8+7", "15"], ["16-9", "7"], ["9×2", "18"], ["36÷6", "6"], ["25-10", "15"]],
+    dificil: [["x+6=12", "x=6"], ["3x=12", "x=4"], ["x-7=1", "x=8"], ["4x=20", "x=5"], ["x/3=3", "x=9"], ["x+9=14", "x=5"], ["2x=8", "x=4"]]
+  },
+  "3": {
+    facil: [["√16", "4"], ["3×3", "9"], ["10+4", "14"], ["8÷4", "2"], ["7+3", "10"], ["9-3", "6"], ["2+6", "8"]],
+    medio: [["6×4", "24"], ["28÷4", "7"], ["13+5", "18"], ["18-7", "11"], ["8×3", "24"], ["45÷5", "9"], ["16-8", "8"]],
+    dificil: [["x+4=9", "x=5"], ["2x=14", "x=7"], ["x-6=0", "x=6"], ["3x=21", "x=7"], ["x/4=5", "x=20"], ["x+5=13", "x=8"], ["4x=32", "x=8"]]
+  },
+  "4": {
+    facil: [["√25", "5"], ["5×2", "10"], ["12+3", "15"], ["9÷3", "3"], ["6+4", "10"], ["11-6", "5"], ["7+2", "9"]],
+    medio: [["7×3", "21"], ["24÷6", "4"], ["15+9", "24"], ["20-6", "14"], ["6×6", "36"], ["48÷8", "6"], ["22-11", "11"]],
+    dificil: [["x+9=15", "x=6"], ["3x=15", "x=5"], ["x-8=2", "x=10"], ["5x=25", "x=5"], ["x/5=2", "x=10"], ["x+4=10", "x=6"], ["2x=12", "x=6"]]
+  }
+};
+
+const tiempos = { facil: 420, medio: 300, dificil: 240 }; // segundos
+
+function cargarCartas() {
+  tablero.innerHTML = "";
+  cartas = [];
+  const curso = cursoSelect.value;
+  const nivel = nivelSelect.value;
+  const pares = datos[curso][nivel];
+  let seleccion = pares.slice(0, 7); // 7 pares = 14 cartas
+
+  seleccion.forEach(([preg, resp]) => {
+    cartas.push({ texto: preg, tipo: 'pregunta', respuesta: resp });
+    cartas.push({ texto: resp, tipo: 'respuesta', respuesta: resp });
+  });
+
+  cartas.sort(() => Math.random() - 0.5);
+  cartas.forEach((carta, i) => {
+    const div = document.createElement('div');
+    div.className = "card";
+    div.textContent = "?";
+    div.dataset.index = i;
+    tablero.appendChild(div);
+  });
+
+  puntaje = 0;
+  actualizarPuntaje();
+  primera = null;
+  segunda = null;
+  iniciarTemporizador();
+}
+
+function actualizarPuntaje() {
+  scoreBoard.textContent = "Puntaje: " + puntaje;
+  if (puntaje > highScore) {
+    highScore = puntaje;
+    localStorage.setItem('highScore', highScore);
+  }
+  highScoreDisplay.textContent = "Puntaje más alto: " + highScore;
+}
+
+function iniciarTemporizador() {
+  clearInterval(temporizador);
+  const nivel = nivelSelect.value;
+  tiempoRestante = tiempos[nivel];
+  actualizarTiempo();
+  temporizador = setInterval(() => {
+    tiempoRestante--;
+    actualizarTiempo();
+    if (tiempoRestante <= 0) {
+      clearInterval(temporizador);
+      alert("¡Tiempo terminado!");
+    }
+  }, 1000);
+}
+
+function actualizarTiempo() {
+  let min = String(Math.floor(tiempoRestante / 60)).padStart(2, '0');
+  let seg = String(tiempoRestante % 60).padStart(2, '0');
+  timerDisplay.textContent = `Tiempo: ${min}:${seg}`;
+}
+
+function mostrarExplicacion(texto) {
+  if (!modoProfe) return;
+  explicacionBox.textContent = "Explicación: " + texto;
+  explicacionBox.classList.add("mostrar");
+  setTimeout(() => {
+    explicacionBox.classList.remove("mostrar");
+  }, 3000);
+}
+
+tablero.addEventListener('click', (e) => {
+  const div = e.target;
+  if (!div.classList.contains('card') || div.classList.contains('correct')) return;
+
+  const index = parseInt(div.dataset.index);
+  const carta = cartas[index];
+  div.textContent = carta.texto;
+  div.classList.add('revealed');
+
+  if (!primera) {
+    primera = { div, carta };
+  } else if (!segunda && div !== primera.div) {
+    segunda = { div, carta };
+    if (primera.carta.respuesta === segunda.carta.respuesta &&
+        primera.carta.tipo !== segunda.carta.tipo) {
+      primera.div.classList.add('correct');
+      segunda.div.classList.add('correct');
+      puntaje += 10;
+      mostrarExplicacion(`${primera.carta.texto} = ${segunda.carta.texto}`);
+    } else {
+      primera.div.classList.add('wrong');
+      segunda.div.classList.add('wrong');
+      setTimeout(() => {
+        primera.div.textContent = "?";
+        segunda.div.textContent = "?";
+        primera.div.classList.remove('revealed', 'wrong');
+        segunda.div.classList.remove('revealed', 'wrong');
+      }, 1000);
+      puntaje = Math.max(puntaje - 5, 0);
+    }
+    actualizarPuntaje();
+    primera = null;
+    segunda = null;
+  }
+});
+
+resetBtn.onclick = cargarCartas;
+cursoSelect.onchange = cargarCartas;
+nivelSelect.onchange = cargarCartas;
+
+modoProfeBtn.onclick = () => {
+  modoProfe = !modoProfe;
+  modoProfeBtn.textContent = modoProfe ? "Modo Profe: ON" : "Modo Profe";
+};
+
+window.onload = () => {
+  highScore = parseInt(localStorage.getItem('highScore')) || 0;
+  highScoreDisplay.textContent = "Puntaje más alto: " + highScore;
+  cargarCartas();
+};
+</script>
