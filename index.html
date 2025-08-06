@@ -1,298 +1,258 @@
-<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html><html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Memorice Matemático</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #e1f5fe;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #f7c59f, #ffee93);
       margin: 0;
       padding: 0;
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
     }
-    header {
-      background-color: #0288d1;
-      color: white;
-      padding: 20px 0;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    h1 {
+      color: #333;
+      margin: 20px 0 10px;
     }
-    .container {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 20px;
+    .controls {
+      margin: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
       justify-content: center;
-      margin-top: 20px;
     }
-    .card {
-      background: #b3e5fc;
+    select, button {
+      padding: 10px;
+      border: none;
       border-radius: 10px;
-      height: 100px;
+      background-color: #4caf50;
+      color: white;
+      font-size: 16px;
+    }
+    #tablero {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 15px;
+      max-width: 700px;
+      width: 100%;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    .carta {
+      background-color: #ffb6b9;
+      color: #333;
+      font-size: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      border-radius: 15px;
+      height: 100px;
       cursor: pointer;
-      transition: background 0.3s, transform 0.3s;
+      transition: transform 0.3s, background-color 0.3s;
     }
-    .card:hover {
-      background: #81d4fa;
-      transform: scale(1.05);
+    .carta.acertada {
+      background-color: #81c784 !important;
     }
-    .matched {
-      background: #a5d6a7 !important;
-      pointer-events: none;
+    .carta.error {
+      background-color: #e57373 !important;
     }
-    .wrong {
-      background: #ef9a9a !important;
+    .puntaje {
+      margin: 10px;
+      font-size: 18px;
     }
-    .controls {
-      margin-bottom: 20px;
+    #modo-profe {
+      display: none;
+      background-color: #2196f3;
+      padding: 15px;
+      color: white;
+      border-radius: 10px;
+      margin-top: 20px;
+      width: 90%;
+      max-width: 600px;
     }
-    select, .score, button {
-      font-size: 16px;
-      padding: 8px;
-      margin: 0 10px;
-    }
-    .score span {
-      font-weight: bold;
+    #explicacion {
+      font-size: 14px;
+      color: #333;
+      margin: 10px 0;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Memorice Matemático</h1>
-    <p>¡Encuentra las parejas correctas y aprende jugando!</p>
-  </header>
-  <div class="container">
-    <div class="controls">
-      <label for="curso">Curso:</label>
-      <select id="curso">
-        <option value="1medio">1° Medio</option>
-        <option value="2medio">2° Medio</option>
-        <option value="3medio">3° Medio</option>
-        <option value="4medio">4° Medio</option>
-      </select>
-      <label for="nivel">Nivel:</label>
-      <select id="nivel">
-        <option value="facil">Fácil</option>
-        <option value="medio">Medio</option>
-        <option value="dificil">Difícil</option>
-      </select>
-      <span class="score">Puntaje: <span id="puntaje">0</span></span>
-      <span class="score">Puntaje Máximo: <span id="maxPuntaje">0</span></span>
-      <button onclick="reiniciarJuego()">Reiniciar</button>
-    </div>
-    <div class="grid" id="grid"></div>
+  <h1>Memorice Matemático</h1>
+  <div class="controls">
+    <select id="curso">
+      <option value="1">1° Medio</option>
+      <option value="2">2° Medio</option>
+      <option value="3">3° Medio</option>
+      <option value="4">4° Medio</option>
+    </select>
+    <select id="nivel">
+      <option value="facil">Fácil</option>
+      <option value="medio">Medio</option>
+      <option value="dificil">Difícil</option>
+    </select>
+    <button onclick="iniciarJuego()">Comenzar</button>
+    <button onclick="reiniciarJuego()">Reiniciar</button>
+    <button onclick="mostrarModoProfe()">Modo Profe</button>
   </div>
-  <script>
-    const datos = {
-      "1medio": {
+  <div class="puntaje" id="puntaje">Puntaje: 0 | Mejor Puntaje: 0</div>
+  <div id="cronometro">Tiempo: 0s</div>
+  <div id="explicacion"></div>
+  <div id="tablero"></div>
+  <div id="modo-profe"></div>  <script>
+    const ejercicios = {
+      1: {
         facil: [
-          { pregunta: "5 + 3", respuesta: "8" },
-          { pregunta: "2 × 2", respuesta: "4" },
-          { pregunta: "10 − 4", respuesta: "6" },
-          { pregunta: "6 ÷ 2", respuesta: "3" },
-          { pregunta: "3 × 3", respuesta: "9" },
-          { pregunta: "7 + 5", respuesta: "12" },
-          { pregunta: "8 − 6", respuesta: "2" }
+          ['2+2', '4'], ['1+3', '4'], ['3+1', '4'], ['5-1', '4'], ['8/2', '4'], ['4x1', '4'], ['6-2', '4']
         ],
         medio: [
-          { pregunta: "8 × 5", respuesta: "40" },
-          { pregunta: "12 ÷ 4", respuesta: "3" },
-          { pregunta: "15 − 6", respuesta: "9" },
-          { pregunta: "4 × 7", respuesta: "28" },
-          { pregunta: "20 ÷ 5", respuesta: "4" },
-          { pregunta: "9 + 6", respuesta: "15" },
-          { pregunta: "11 − 2", respuesta: "9" }
+          ['3x2', '6'], ['2x3', '6'], ['6/1', '6'], ['7-1', '6'], ['9-3', '6'], ['12/2', '6'], ['2x3', '6']
         ],
         dificil: [
-          { pregunta: "3²", respuesta: "9" },
-          { pregunta: "√64", respuesta: "8" },
-          { pregunta: "7²", respuesta: "49" },
-          { pregunta: "√25", respuesta: "5" },
-          { pregunta: "4³", respuesta: "64" },
-          { pregunta: "√36", respuesta: "6" },
-          { pregunta: "5²", respuesta: "25" }
+          ['3x(2+1)', '9'], ['(4x2)-1', '7'], ['5+3-1', '7'], ['14/2', '7'], ['3+4', '7'], ['10-3', '7'], ['21/3', '7']
         ]
       },
-      "2medio": {
-        facil: [
-          { pregunta: "1/2 + 1/2", respuesta: "1" },
-          { pregunta: "3/4 − 1/4", respuesta: "1/2" },
-          { pregunta: "2/3 + 1/3", respuesta: "1" },
-          { pregunta: "5/5", respuesta: "1" },
-          { pregunta: "1/4 + 1/4", respuesta: "1/2" },
-          { pregunta: "2/2", respuesta: "1" },
-          { pregunta: "3/3", respuesta: "1" }
-        ],
-        medio: [
-          { pregunta: "2³", respuesta: "8" },
-          { pregunta: "√16", respuesta: "4" },
-          { pregunta: "3²", respuesta: "9" },
-          { pregunta: "5²", respuesta: "25" },
-          { pregunta: "√49", respuesta: "7" },
-          { pregunta: "4²", respuesta: "16" },
-          { pregunta: "√81", respuesta: "9" }
-        ],
-        dificil: [
-          { pregunta: "x + 3 = 7", respuesta: "x = 4" },
-          { pregunta: "x − 2 = 5", respuesta: "x = 7" },
-          { pregunta: "2x = 10", respuesta: "x = 5" },
-          { pregunta: "x/3 = 4", respuesta: "x = 12" },
-          { pregunta: "3x + 1 = 10", respuesta: "x = 3" },
-          { pregunta: "x − 5 = 0", respuesta: "x = 5" },
-          { pregunta: "2x − 4 = 6", respuesta: "x = 5" }
-        ]
+      2: {
+        facil: [['1/2 + 1/2', '1'], ['2/4', '1/2'], ['3/6', '1/2'], ['5/10', '1/2'], ['4/8', '1/2'], ['6/12', '1/2'], ['7/14', '1/2']],
+        medio: [['√4', '2'], ['√9', '3'], ['2²', '4'], ['3²', '9'], ['√16', '4'], ['√25', '5'], ['5²', '25']],
+        dificil: [['x+3=5', 'x=2'], ['2x=6', 'x=3'], ['x-4=2', 'x=6'], ['x/2=3', 'x=6'], ['x+5=10', 'x=5'], ['3x=9', 'x=3'], ['x-2=1', 'x=3']]
       },
-      "3medio": {
-        facil: [
-          { pregunta: "Área del cuadrado (lado 4)", respuesta: "16" },
-          { pregunta: "Área del triángulo (b=4, h=3)", respuesta: "6" },
-          { pregunta: "Área del rectángulo (2×5)", respuesta: "10" },
-          { pregunta: "Área del círculo (r=1)", respuesta: "3.14" },
-          { pregunta: "Perímetro de cuadrado (lado 3)", respuesta: "12" },
-          { pregunta: "Área del rombo (d1=6, d2=4)", respuesta: "12" },
-          { pregunta: "Área del trapecio (3+5)×2/2", respuesta: "8" }
-        ],
-        medio: [
-          { pregunta: "f(x) = 2x, f(3)", respuesta: "6" },
-          { pregunta: "f(x) = x + 4, f(1)", respuesta: "5" },
-          { pregunta: "f(x) = x², f(2)", respuesta: "4" },
-          { pregunta: "f(x) = 3x − 1, f(2)", respuesta: "5" },
-          { pregunta: "f(x) = x² − 1, f(3)", respuesta: "8" },
-          { pregunta: "f(x) = 2x + 2, f(0)", respuesta: "2" },
-          { pregunta: "f(x) = 5, f(10)", respuesta: "5" }
-        ],
-        dificil: [
-          { pregunta: "(x+2)(x−3)", respuesta: "x²−x−6" },
-          { pregunta: "x² + 2x + 1", respuesta: "(x+1)²" },
-          { pregunta: "x² − 9", respuesta: "(x+3)(x−3)" },
-          { pregunta: "(x−5)²", respuesta: "x²−10x+25" },
-          { pregunta: "(x+4)²", respuesta: "x²+8x+16" },
-          { pregunta: "(x+2)(x+3)", respuesta: "x²+5x+6" },
-          { pregunta: "x² + 4x + 4", respuesta: "(x+2)²" }
-        ]
+      3: {
+        facil: [['Área cuadrado 2cm', '4cm²'], ['Área rectángulo 2x3', '6cm²'], ['Área triángulo base 4 altura 2', '4cm²'], ['Perímetro cuadrado 2cm', '8cm'], ['Área círculo r=1', '3.14cm²'], ['Área cuadrado 3cm', '9cm²'], ['Área rectángulo 3x3', '9cm²']],
+        medio: [['y=2x cuando x=2', '4'], ['y=x+3 si x=1', '4'], ['y=3x si x=2', '6'], ['f(x)=x² si x=2', '4'], ['f(x)=2x+1 si x=2', '5'], ['y=-x+3 si x=1', '2'], ['y=4x si x=1', '4']],
+        dificil: [['(x+1)(x-1)=?', 'x²-1'], ['(x+2)²=?', 'x²+4x+4'], ['x²+x-6=0 una raíz', 'x=2'], ['x²-4=0 una raíz', 'x=2'], ['(x-3)(x+3)', 'x²-9'], ['(x+1)²', 'x²+2x+1'], ['x²-5x+6', '(x-2)(x-3)']]
       },
-      "4medio": {
-        facil: [
-          { pregunta: "Prob. cara en moneda", respuesta: "0.5" },
-          { pregunta: "Prob. par en dado", respuesta: "0.5" },
-          { pregunta: "Prob. rojo en baraja", respuesta: "0.5" },
-          { pregunta: "Prob. 1 en dado", respuesta: "1/6" },
-          { pregunta: "Prob. impar en dado", respuesta: "0.5" },
-          { pregunta: "Prob. rey en baraja", respuesta: "4/52" },
-          { pregunta: "Prob. no sacar as", respuesta: "48/52" }
-        ],
-        medio: [
-          { pregunta: "sen(90°)", respuesta: "1" },
-          { pregunta: "cos(0°)", respuesta: "1" },
-          { pregunta: "tan(45°)", respuesta: "1" },
-          { pregunta: "sen(0°)", respuesta: "0" },
-          { pregunta: "cos(180°)", respuesta: "-1" },
-          { pregunta: "sen(30°)", respuesta: "0.5" },
-          { pregunta: "cos(60°)", respuesta: "0.5" }
-        ],
-        dificil: [
-          { pregunta: "d/dx (x²)", respuesta: "2x" },
-          { pregunta: "d/dx (3x)", respuesta: "3" },
-          { pregunta: "d/dx (x³)", respuesta: "3x²" },
-          { pregunta: "d/dx (2x²)", respuesta: "4x" },
-          { pregunta: "d/dx (5x^4)", respuesta: "20x³" },
-          { pregunta: "d/dx (x)", respuesta: "1" },
-          { pregunta: "d/dx (7)", respuesta: "0" }
-        ]
+      4: {
+        facil: [['Prob 1 cara moneda', '1/2'], ['Prob 1 de 6 dado', '1/6'], ['Prob par dado', '3/6'], ['Prob impar dado', '3/6'], ['Prob >4 dado', '2/6'], ['Prob <3 dado', '2/6'], ['Prob 2 cara moneda', '1/4']],
+        medio: [['sen(30°)', '0.5'], ['cos(0°)', '1'], ['tan(45°)', '1'], ['sen(90°)', '1'], ['cos(60°)', '0.5'], ['sen(0°)', '0'], ['cos(90°)', '0']],
+        dificil: [['d/dx x²', '2x'], ['d/dx 3x', '3'], ['d/dx x³', '3x²'], ['d/dx x', '1'], ['d/dx 2x²', '4x'], ['d/dx 5', '0'], ['d/dx x²+1', '2x']]
       }
     };
 
-    const grid = document.getElementById("grid");
-    const puntajeEl = document.getElementById("puntaje");
-    const maxPuntajeEl = document.getElementById("maxPuntaje");
-    const cursoSelector = document.getElementById("curso");
-    const nivelSelector = document.getElementById("nivel");
-
-    let puntaje = 0;
+    let cartas = [];
     let seleccionadas = [];
-    let maxPuntaje = localStorage.getItem("maxPuntaje") || 0;
-    maxPuntajeEl.innerText = maxPuntaje;
+    let puntaje = 0;
+    let mejorPuntaje = localStorage.getItem("mejorPuntaje") || 0;
+    let cursoStats = {};
+    let erroresTotales = 0;
+    let aciertosTotales = 0;
+    let cronometro;
+    let tiempoRestante = 0;
 
-    function cargarJuego(curso, nivel) {
-      grid.innerHTML = "";
+    function iniciarJuego() {
+      const curso = document.getElementById("curso").value;
+      const nivel = document.getElementById("nivel").value;
+      const ejerciciosNivel = ejercicios[curso][nivel];
+      cartas = [...ejerciciosNivel].flatMap(pair => [
+        { texto: pair[0], respuesta: pair[1] },
+        { texto: pair[1], respuesta: pair[1] }
+      ]);
+      cartas = cartas.sort(() => Math.random() - 0.5);
+      mostrarCartas();
       puntaje = 0;
-      puntajeEl.innerText = puntaje;
-      seleccionadas = [];
+      document.getElementById("puntaje").textContent = `Puntaje: ${puntaje} | Mejor Puntaje: ${mejorPuntaje}`;
+      document.getElementById("explicacion").textContent = "";
+      actualizarTiempo(nivel);
+      registrarEstadisticas(curso, nivel);
+    }
 
-      let pares = datos[curso][nivel].slice(0, 7); // 7 pares = 14 cartas
-      let cartas = [];
+    function actualizarTiempo(nivel) {
+      clearInterval(cronometro);
+      if (nivel === "facil") tiempoRestante = 180;
+      else if (nivel === "medio") tiempoRestante = 120;
+      else tiempoRestante = 60;
+      document.getElementById("cronometro").textContent = `Tiempo: ${tiempoRestante}s`;
+      cronometro = setInterval(() => {
+        tiempoRestante--;
+        document.getElementById("cronometro").textContent = `Tiempo: ${tiempoRestante}s`;
+        if (tiempoRestante <= 0) {
+          clearInterval(cronometro);
+          alert("¡Tiempo terminado!");
+        }
+      }, 1000);
+    }
 
-      pares.forEach(par => {
-        cartas.push({ texto: par.pregunta, valor: par.respuesta });
-        cartas.push({ texto: par.respuesta, valor: par.respuesta });
-      });
-
-      cartas = cartas.sort(() => 0.5 - Math.random());
-
-      cartas.forEach((carta) => {
+    function mostrarCartas() {
+      const tablero = document.getElementById("tablero");
+      tablero.innerHTML = "";
+      cartas.forEach((carta, index) => {
         const div = document.createElement("div");
-        div.classList.add("card");
-        div.dataset.valor = carta.valor;
-        div.innerText = "?";
-
-        div.addEventListener("click", () => {
-          if (div.innerText === "?" && seleccionadas.length < 2) {
-            div.innerText = carta.texto;
-            seleccionadas.push({ div, valor: carta.valor });
-
-            if (seleccionadas.length === 2) {
-              setTimeout(() => {
-                const [a, b] = seleccionadas;
-                if (a.valor === b.valor) {
-                  a.div.classList.add("matched");
-                  b.div.classList.add("matched");
-                  puntaje += 10;
-                } else {
-                  a.div.classList.add("wrong");
-                  b.div.classList.add("wrong");
-                  setTimeout(() => {
-                    a.div.innerText = "?";
-                    b.div.innerText = "?";
-                    a.div.classList.remove("wrong");
-                    b.div.classList.remove("wrong");
-                  }, 300);
-                  puntaje -= 2;
-                }
-                puntajeEl.innerText = puntaje;
-                if (puntaje > maxPuntaje) {
-                  maxPuntaje = puntaje;
-                  localStorage.setItem("maxPuntaje", puntaje);
-                  maxPuntajeEl.innerText = puntaje;
-                }
-                seleccionadas = [];
-              }, 500);
-            }
-          }
-        });
-
-        grid.appendChild(div);
+        div.className = "carta";
+        div.textContent = "?";
+        div.onclick = () => seleccionarCarta(div, carta, index);
+        tablero.appendChild(div);
       });
+    }
+
+    function seleccionarCarta(div, carta, index) {
+      if (seleccionadas.length < 2 && !div.classList.contains("acertada")) {
+        div.textContent = carta.texto;
+        seleccionadas.push({ div, carta, index });
+        if (seleccionadas.length === 2) {
+          verificarMatch();
+        }
+      }
+    }
+
+    function verificarMatch() {
+      const [a, b] = seleccionadas;
+      if (a.carta.respuesta === b.carta.respuesta) {
+        a.div.classList.add("acertada");
+        b.div.classList.add("acertada");
+        mostrarExplicacion(a.carta.texto, b.carta.texto, a.carta.respuesta);
+        puntaje += 10;
+        aciertosTotales++;
+      } else {
+        a.div.classList.add("error");
+        b.div.classList.add("error");
+        erroresTotales++;
+        puntaje -= 2;
+        setTimeout(() => {
+          a.div.textContent = "?";
+          b.div.textContent = "?";
+          a.div.classList.remove("error");
+          b.div.classList.remove("error");
+        }, 800);
+      }
+      seleccionadas = [];
+      if (puntaje > mejorPuntaje) {
+        mejorPuntaje = puntaje;
+        localStorage.setItem("mejorPuntaje", mejorPuntaje);
+      }
+      document.getElementById("puntaje").textContent = `Puntaje: ${puntaje} | Mejor Puntaje: ${mejorPuntaje}`;
+    }
+
+    function mostrarExplicacion(txt1, txt2, res) {
+      const texto = `${txt1} y ${txt2} corresponden a la respuesta: ${res}`;
+      document.getElementById("explicacion").textContent = texto;
     }
 
     function reiniciarJuego() {
-      cargarJuego(cursoSelector.value, nivelSelector.value);
+      iniciarJuego();
     }
 
-    cursoSelector.addEventListener("change", () => reiniciarJuego());
-    nivelSelector.addEventListener("change", () => reiniciarJuego());
+    function registrarEstadisticas(curso, nivel) {
+      const clave = `Curso ${curso} - ${nivel}`;
+      cursoStats[clave] = (cursoStats[clave] || 0) + 1;
+    }
 
-    cargarJuego("1medio", "facil");
-  </script>
-</body>
+    function mostrarModoProfe() {
+      const div = document.getElementById("modo-profe");
+      let masJugado = Object.entries(cursoStats).sort((a, b) => b[1] - a[1])[0];
+      div.innerHTML = `
+        <h3>📊 Estadísticas del Modo Profe</h3>
+        <p><strong>Curso/Nivel más jugado:</strong> ${masJugado ? masJugado[0] : 'N/A'}</p>
+        <p><strong>Total de aciertos:</strong> ${aciertosTotales}</p>
+        <p><strong>Total de errores:</strong> ${erroresTotales}</p>
+        <p><em>Consejo:</em> Fíjate en las preguntas con más errores para reforzarlas en clase.</p>
+      `;
+      div.style.display = "block";
+    }
+  </script></body>
 </html>
