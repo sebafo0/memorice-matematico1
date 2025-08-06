@@ -1,117 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Memorice Matemático</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #e3f2fd;
+      margin: 0;
+      padding: 20px;
+    }
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      max-width: 600px;
+      margin: auto;
+    }
+    .card {
+      background-color: white;
+      border: 2px solid #42a5f5;
+      padding: 20px;
+      font-size: 24px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .card.revealed {
+      background-color: #bbdefb;
+    }
+    .card.correct {
+      background-color: #c8e6c9;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Memorice Matemático</h1>
+<div id="game-board"></div>
+<p id="score">Puntaje: 0</p>
+
 <script>
-const operacionesPorCurso = {
-  1: [["2 + 3", "5"], ["5 × 2", "10"], ["6 - 1", "5"], ["9 ÷ 3", "3"], ["4 × 4", "16"], ["8 - 3", "5"], ["7 + 2", "9"], ["10 ÷ 2", "5"]],
-  2: [["3 × 6", "18"], ["12 ÷ 4", "3"], ["15 - 7", "8"], ["9 + 5", "14"], ["8 × 2", "16"], ["6 + 9", "15"], ["20 ÷ 5", "4"], ["18 - 3", "15"]],
-  3: [["(3 + 5) × 2", "16"], ["(12 - 4) ÷ 2", "4"], ["9 × (2 + 1)", "27"], ["(18 ÷ 3) + 6", "12"], ["(7 × 3) - 5", "16"], ["5²", "25"], ["√36", "6"], ["(4 + 4) × 2", "16"]],
-  4: [["(5 × 2)²", "100"], ["√81", "9"], ["(9 - 3) × 4", "24"], ["3³", "27"], ["(2 + 6) × (3 - 1)", "16"], ["49 ÷ 7", "7"], ["(5 × 4) + (6 ÷ 2)", "23"], ["√64", "8"]]
-};
+  const gameBoard = document.getElementById("game-board");
+  const scoreDisplay = document.getElementById("score");
+  let score = 0;
 
-let selectedCards = [], score = 0, highScore = localStorage.getItem("highScore") || 0, timer, tiempoRestante = 0;
+  let operations = [
+    { q: "3 + 4", a: "7" },
+    { q: "2 + 6", a: "8" },
+    { q: "5 + 1", a: "6" },
+    { q: "9 - 4", a: "5" },
+    { q: "10 - 2", a: "8" },
+    { q: "6 + 3", a: "9" },
+    { q: "4 + 2", a: "6" }
+  ];
 
-const gameBoard = document.getElementById("game-board"),
-      cursoSelect = document.getElementById("curso"),
-      nivelSelect = document.getElementById("nivel"),
-      scoreBoard = document.getElementById("score-board"),
-      highScoreDiv = document.getElementById("high-score"),
-      explicacionDiv = document.getElementById("explicacion"),
-      timerDiv = document.getElementById("timer");
+  let cards = [];
 
-highScoreDiv.textContent = `Puntaje más alto: ${highScore}`;
+  operations.forEach(op => {
+    cards.push({ type: "q", value: op.q });
+    cards.push({ type: "a", value: op.a });
+  });
 
-function actualizarTimer() {
-  let m = Math.floor(tiempoRestante / 60),
-      s = tiempoRestante % 60;
-  timerDiv.textContent = `Tiempo: ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  if (tiempoRestante <= 0) {
-    clearInterval(timer);
-    alert("⏱️ ¡Tiempo terminado!");
+  cards.sort(() => Math.random() - 0.5);
+
+  let first = null;
+  let second = null;
+
+  function renderBoard() {
+    gameBoard.innerHTML = "";
+    cards.forEach((card, index) => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.dataset.index = index;
+      div.textContent = "?";
+      div.addEventListener("click", () => revealCard(div));
+      gameBoard.appendChild(div);
+    });
   }
-  tiempoRestante--;
-}
 
-function iniciarCronometro(nivel) {
-  clearInterval(timer);
-  tiempoRestante = nivel === "facil" ? 7 * 60 : nivel === "medio" ? 5 * 60 : 4 * 60;
-  actualizarTimer();
-  timer = setInterval(actualizarTimer, 1000);
-}
+  function revealCard(cardEl) {
+    const index = cardEl.dataset.index;
+    const card = cards[index];
+    if (cardEl.classList.contains("revealed") || second) return;
 
-function generarCartas() {
-  gameBoard.innerHTML = "";
-  explicacionDiv.textContent = "";
-  selectedCards = [];
-  score = 0;
-  scoreBoard.textContent = `Puntaje: 0`;
+    cardEl.textContent = card.value;
+    cardEl.classList.add("revealed");
 
-  const curso = cursoSelect.value,
-        nivel = nivelSelect.value;
-  iniciarCronometro(nivel);
-
-  let operaciones = operacionesPorCurso[curso].sort(() => Math.random() - 0.5).slice(0, 7);
-  let pares = [];
-
-  operaciones.forEach(([op, res]) => {
-    pares.push({ tipo: "op", texto: op, resultado: res });
-    pares.push({ tipo: "res", texto: res, resultado: res });
-  });
-
-  pares = pares.sort(() => Math.random() - 0.5);
-
-  pares.forEach(carta => {
-    const div = document.createElement("div");
-    div.classList.add("card");
-    div.dataset.tipo = carta.tipo;
-    div.dataset.resultado = carta.resultado;
-    div.textContent = "?";
-    div.dataset.textoReal = carta.texto;
-    div.addEventListener("click", () => seleccionarCarta(div));
-    gameBoard.appendChild(div);
-  });
-}
-
-function seleccionarCarta(card) {
-  if (card.classList.contains("revealed") || selectedCards.length === 2) return;
-
-  card.textContent = card.dataset.textoReal;
-  card.classList.add("revealed");
-  selectedCards.push(card);
-
-  if (selectedCards.length === 2) {
-    const [c1, c2] = selectedCards;
-    const valid = (
-      c1 !== c2 &&
-      ((c1.dataset.tipo === "op" && c2.dataset.tipo === "res") ||
-       (c1.dataset.tipo === "res" && c2.dataset.tipo === "op")) &&
-      c1.dataset.resultado === c2.dataset.resultado
-    );
-
-    if (valid) {
-      c1.classList.add("correct");
-      c2.classList.add("correct");
-      score++;
-      scoreBoard.textContent = `Puntaje: ${score}`;
-      if (score > highScore) {
-        highScore = score;
-        localStorage.setItem("highScore", highScore);
-        highScoreDiv.textContent = `Puntaje más alto: ${highScore}`;
-      }
-      explicacionDiv.textContent = `✔️ ${c1.dataset.resultado} es correcto porque ${c1.dataset.tipo === 'op' ? c1.dataset.textoReal : c2.dataset.textoReal} = ${c1.dataset.resultado}`;
-      selectedCards = [];
+    if (!first) {
+      first = { card, el: cardEl };
     } else {
-      c1.classList.add("wrong");
-      c2.classList.add("wrong");
-      explicacionDiv.textContent = `❌ Intenta de nuevo.`;
-      setTimeout(() => {
-        [c1, c2].forEach(c => {
-          c.classList.remove("revealed", "wrong");
-          c.textContent = "?";
-        });
-        selectedCards = [];
-      }, 1000);
+      second = { card, el: cardEl };
+      setTimeout(checkMatch, 800);
     }
   }
-}
 
-document.getElementById("reset-btn").addEventListener("click", generarCartas);
-document.addEventListener("DOMContentLoaded", generarCartas);
+  function checkMatch() {
+    if (
+      (first.card.type === "q" && second.card.type === "a" && eval(first.card.value) == second.card.value) ||
+      (first.card.type === "a" && second.card.type === "q" && eval(second.card.value) == first.card.value)
+    ) {
+      first.el.classList.add("correct");
+      second.el.classList.add("correct");
+      score++;
+      scoreDisplay.textContent = "Puntaje: " + score;
+    } else {
+      first.el.textContent = "?";
+      second.el.textContent = "?";
+      first.el.classList.remove("revealed");
+      second.el.classList.remove("revealed");
+    }
+
+    first = null;
+    second = null;
+  }
+
+  renderBoard();
 </script>
+
+</body>
+</html>
