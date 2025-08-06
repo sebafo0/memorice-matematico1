@@ -1,123 +1,164 @@
-<!DOCTYPE html>
-<html lang="es">
+<!<!DOCTYPE html><html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Memorice Matemático</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #fbc2eb, #a6c1ee);
       text-align: center;
-      background: #e3f2fd;
       margin: 0;
       padding: 20px;
     }
+    h1 {
+      color: #333;
+    }
+    #controls {
+      margin-bottom: 20px;
+    }
+    select, button {
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+    }
     #game-board {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      max-width: 600px;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 12px;
+      max-width: 700px;
       margin: auto;
     }
     .card {
-      background-color: white;
-      border: 2px solid #42a5f5;
-      padding: 20px;
+      background: #fff;
+      border: 2px solid #0077c2;
+      border-radius: 10px;
       font-size: 24px;
-      border-radius: 8px;
+      padding: 25px 0;
       cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
     }
     .card.revealed {
-      background-color: #bbdefb;
+      background: #c5e1a5;
     }
     .card.correct {
-      background-color: #c8e6c9;
+      background: #81c784;
+    }
+    #scoreboard {
+      margin-top: 20px;
+      font-size: 18px;
     }
   </style>
 </head>
-<body>
+<body><h1>Memorice Matemático</h1><div id="controls">
+  <label for="level">Selecciona el nivel:</label>
+  <select id="level">
+    <option value="1">1° Medio</option>
+    <option value="2">2° Medio</option>
+    <option value="3">3° Medio</option>
+    <option value="4">4° Medio</option>
+  </select>
+  <button onclick="startGame()">Iniciar</button>
+</div><div id="game-board"></div><div id="scoreboard">
+  <p id="score">Puntaje: 0</p>
+  <p id="highScore">Mejor puntaje: 0</p>
+</div><script>
+const board = document.getElementById("game-board");
+const scoreText = document.getElementById("score");
+const highScoreText = document.getElementById("highScore");
+let level = 1;
+let cards = [];
+let firstCard = null;
+let secondCard = null;
+let score = 0;
+let highScore = localStorage.getItem("highScore") || 0;
+highScoreText.textContent = `Mejor puntaje: ${highScore}`;
 
-<h1>Memorice Matemático</h1>
-<div id="game-board"></div>
-<p id="score">Puntaje: 0</p>
+const levels = {
+  1: ["3+4", "7", "2+5", "7", "5+3", "8", "1+2", "3", "6-1", "5", "9-3", "6", "4+2", "6"],
+  2: ["4x2", "8", "9-2", "7", "3x3", "9", "8/2", "4", "12-6", "6", "2x5", "10", "14/2", "7"],
+  3: ["2^3", "8", "sqrt(49)", "7", "16/4", "4", "9+6", "15", "3^2", "9", "81/9", "9", "18-9", "9"],
+  4: ["5^2", "25", "sqrt(64)", "8", "100/10", "10", "12x3", "36", "6^2", "36", "45-15", "30", "8x4", "32"]
+};
 
-<script>
-  const gameBoard = document.getElementById("game-board");
-  const scoreDisplay = document.getElementById("score");
-  let score = 0;
+function shuffle(array) {
+  return array.sort(() => Math.random() - 0.5);
+}
 
-  let operations = [
-    { q: "3 + 4", a: "7" },
-    { q: "2 + 6", a: "8" },
-    { q: "5 + 1", a: "6" },
-    { q: "9 - 4", a: "5" },
-    { q: "10 - 2", a: "8" },
-    { q: "6 + 3", a: "9" },
-    { q: "4 + 2", a: "6" }
-  ];
-
-  let cards = [];
-
-  operations.forEach(op => {
-    cards.push({ type: "q", value: op.q });
-    cards.push({ type: "a", value: op.a });
+function renderBoard() {
+  board.innerHTML = "";
+  cards.forEach((val, i) => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.dataset.index = i;
+    div.textContent = "?";
+    div.addEventListener("click", () => revealCard(div));
+    board.appendChild(div);
   });
+}
 
-  cards.sort(() => Math.random() - 0.5);
-
-  let first = null;
-  let second = null;
-
-  function renderBoard() {
-    gameBoard.innerHTML = "";
-    cards.forEach((card, index) => {
-      const div = document.createElement("div");
-      div.className = "card";
-      div.dataset.index = index;
-      div.textContent = "?";
-      div.addEventListener("click", () => revealCard(div));
-      gameBoard.appendChild(div);
-    });
-  }
-
-  function revealCard(cardEl) {
-    const index = cardEl.dataset.index;
-    const card = cards[index];
-    if (cardEl.classList.contains("revealed") || second) return;
-
-    cardEl.textContent = card.value;
-    cardEl.classList.add("revealed");
-
-    if (!first) {
-      first = { card, el: cardEl };
-    } else {
-      second = { card, el: cardEl };
-      setTimeout(checkMatch, 800);
-    }
-  }
-
-  function checkMatch() {
-    if (
-      (first.card.type === "q" && second.card.type === "a" && eval(first.card.value) == second.card.value) ||
-      (first.card.type === "a" && second.card.type === "q" && eval(second.card.value) == first.card.value)
-    ) {
-      first.el.classList.add("correct");
-      second.el.classList.add("correct");
-      score++;
-      scoreDisplay.textContent = "Puntaje: " + score;
-    } else {
-      first.el.textContent = "?";
-      second.el.textContent = "?";
-      first.el.classList.remove("revealed");
-      second.el.classList.remove("revealed");
-    }
-
-    first = null;
-    second = null;
-  }
-
+function startGame() {
+  level = document.getElementById("level").value;
+  const data = levels[level];
+  cards = shuffle([...data]);
+  firstCard = null;
+  secondCard = null;
+  score = 0;
+  scoreText.textContent = `Puntaje: ${score}`;
   renderBoard();
-</script>
+}
 
-</body>
+function revealCard(div) {
+  const idx = div.dataset.index;
+  if (div.classList.contains("revealed") || secondCard) return;
+
+  div.textContent = cards[idx];
+  div.classList.add("revealed");
+
+  if (!firstCard) {
+    firstCard = { div, val: cards[idx], idx };
+  } else {
+    secondCard = { div, val: cards[idx], idx };
+    setTimeout(checkMatch, 800);
+  }
+}
+
+function checkMatch() {
+  const isMatch = isMatching(firstCard.val, secondCard.val);
+  if (isMatch) {
+    firstCard.div.classList.add("correct");
+    secondCard.div.classList.add("correct");
+    score++;
+    scoreText.textContent = `Puntaje: ${score}`;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem("highScore", highScore);
+      highScoreText.textContent = `Mejor puntaje: ${highScore}`;
+    }
+  } else {
+    firstCard.div.textContent = "?";
+    secondCard.div.textContent = "?";
+    firstCard.div.classList.remove("revealed");
+    secondCard.div.classList.remove("revealed");
+  }
+  firstCard = null;
+  secondCard = null;
+}
+
+function isMatching(a, b) {
+  try {
+    return evalExp(a) === evalExp(b);
+  } catch {
+    return false;
+  }
+}
+
+function evalExp(exp) {
+  if (!isNaN(exp)) return Number(exp);
+  exp = exp.replace("x", "*").replace("^", "**").replace("sqrt(", "Math.sqrt(");
+  return Function(`return ${exp}`)();
+}
+</script></body>
 </html>
