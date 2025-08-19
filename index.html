@@ -41,16 +41,16 @@
     font-size: 1rem;
     cursor: pointer;
     user-select: none;
+    color: transparent; /* El texto está oculto */
     transition: background-color 0.3s, color 0.3s;
     padding: 0.5em;
     text-align: center;
     border-radius: 8px;
     box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-    /* Color de texto visible */
-    color: black;
   }
   .card.flipped {
     background: #4caf50;
+    color: black; /* El texto se hace visible al voltear */
     cursor: default;
   }
   .card.matched {
@@ -374,27 +374,48 @@
     // Crear elementos DOM
     cartas.forEach(c => {
       const cardDiv = document.createElement("div");
-      cardDiv.classList.add("card", "flipped");
+      cardDiv.classList.add("card");
       cardDiv.dataset.id = c.id;
       cardDiv.dataset.tipo = c.tipo;
       cardDiv.dataset.text = c.text;
       cardDiv.dataset.explicacion = c.explicacion;
-      cardDiv.textContent = c.text; // texto visible al inicio
+      cardDiv.textContent = "";
       cardDiv.addEventListener("click", manejarClickCarta);
       board.appendChild(cardDiv);
     });
+    
+    // Voltea todas las cartas al inicio del juego
+    const todasCartas = document.querySelectorAll(".card");
+    todasCartas.forEach(c => {
+        c.classList.add("flipped");
+        c.textContent = c.dataset.text;
+    });
 
-    iniciarTemporizador();
+    // Vuelve a voltear las cartas después de 2 segundos para que el juego pueda comenzar
+    setTimeout(() => {
+        todasCartas.forEach(c => {
+            if (!c.classList.contains("matched")) {
+                c.classList.remove("flipped");
+                c.textContent = "";
+            }
+        });
+        iniciarTemporizador();
+        bloqueoClick = false; // Desbloquear clicks después de que las cartas se volteen
+    }, 2000);
+    
+    bloqueoClick = true; // Bloquear clicks mientras las cartas están visibles
   }
 
   function manejarClickCarta(e) {
     if (bloqueoClick) return;
 
     const carta = e.currentTarget;
-    if (carta.classList.contains("matched")) return;
+    if (carta.classList.contains("flipped") || carta.classList.contains("matched")) return;
+
+    carta.classList.add("flipped");
+    carta.textContent = carta.dataset.text;
 
     cartasSeleccionadas.push(carta);
-    carta.classList.add("flipped");
 
     if (cartasSeleccionadas.length === 2) {
       bloqueoClick = true;
@@ -426,6 +447,8 @@
         setTimeout(() => {
           primera.classList.remove("flipped", "wrong");
           segunda.classList.remove("flipped", "wrong");
+          primera.textContent = "";
+          segunda.textContent = "";
           explanationDiv.textContent = "";
           bloqueoClick = false;
         }, 1500);
