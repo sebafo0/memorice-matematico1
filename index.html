@@ -1,298 +1,499 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Memorice Matemático</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #e1f5fe;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    header {
-      background-color: #0288d1;
-      color: white;
-      padding: 20px 0;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .container {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 20px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .card {
-      background: #b3e5fc;
-      border-radius: 10px;
-      height: 100px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      cursor: pointer;
-      transition: background 0.3s, transform 0.3s;
-    }
-    .card:hover {
-      background: #81d4fa;
-      transform: scale(1.05);
-    }
-    .matched {
-      background: #a5d6a7 !important;
-      pointer-events: none;
-    }
-    .wrong {
-      background: #ef9a9a !important;
-    }
-    .controls {
-      margin-bottom: 20px;
-    }
-    select, .score, button {
-      font-size: 16px;
-      padding: 8px;
-      margin: 0 10px;
-    }
-    .score span {
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Memorice Matemático - 1° a 4° Medio</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 1em;
+    background: #f5f5f5;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 0.5em;
+  }
+  #controls {
+    text-align: center;
+    margin-bottom: 1em;
+  }
+  select, button {
+    font-size: 1rem;
+    padding: 0.4em 0.8em;
+    margin: 0 0.5em;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(4, 140px);
+    grid-gap: 15px;
+    justify-content: center;
+    margin-bottom: 1em;
+  }
+  .card {
+    background: #eee;
+    border: 2px solid #ccc;
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s, color 0.3s;
+    padding: 0.5em;
+    text-align: center;
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    /* Color de texto visible */
+    color: black;
+  }
+  .card.flipped {
+    background: #4caf50;
+    cursor: default;
+  }
+  .card.matched {
+    background: #2e7d32;
+    color: white;
+    cursor: default;
+  }
+  .card.wrong {
+    background: #f44336;
+    color: white;
+    cursor: default;
+  }
+  #explanation {
+    min-height: 3em;
+    margin-bottom: 1em;
+    font-style: italic;
+    text-align: center;
+    color: #333;
+  }
+  #scoreboard, #timer {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin: 0.3em 1em;
+  }
+  #info-bar {
+    text-align: center;
+    margin-bottom: 1em;
+  }
+
+  /* Colores para dificultad */
+  .board-facil .card { border-color: #81c784; }
+  .board-medio .card { border-color: #4caf50; }
+  .board-dificil .card { border-color: #388e3c; }
+  .board-extremo .card { border-color: #1b5e20; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Memorice Matemático</h1>
-    <p>¡Encuentra las parejas correctas y aprende jugando!</p>
-  </header>
-  <div class="container">
-    <div class="controls">
-      <label for="curso">Curso:</label>
-      <select id="curso">
-        <option value="1medio">1° Medio</option>
-        <option value="2medio">2° Medio</option>
-        <option value="3medio">3° Medio</option>
-        <option value="4medio">4° Medio</option>
-      </select>
-      <label for="nivel">Nivel:</label>
-      <select id="nivel">
-        <option value="facil">Fácil</option>
-        <option value="medio">Medio</option>
-        <option value="dificil">Difícil</option>
-      </select>
-      <span class="score">Puntaje: <span id="puntaje">0</span></span>
-      <span class="score">Puntaje Máximo: <span id="maxPuntaje">0</span></span>
-      <button onclick="reiniciarJuego()">Reiniciar</button>
-    </div>
-    <div class="grid" id="grid"></div>
-  </div>
-  <script>
-    const datos = {
-      "1medio": {
-        facil: [
-          { pregunta: "5 + 3", respuesta: "8" },
-          { pregunta: "2 × 2", respuesta: "4" },
-          { pregunta: "10 − 4", respuesta: "6" },
-          { pregunta: "6 ÷ 2", respuesta: "3" },
-          { pregunta: "3 × 3", respuesta: "9" },
-          { pregunta: "7 + 5", respuesta: "12" },
-          { pregunta: "8 − 6", respuesta: "2" }
-        ],
-        medio: [
-          { pregunta: "8 × 5", respuesta: "40" },
-          { pregunta: "12 ÷ 4", respuesta: "3" },
-          { pregunta: "15 − 6", respuesta: "9" },
-          { pregunta: "4 × 7", respuesta: "28" },
-          { pregunta: "20 ÷ 5", respuesta: "4" },
-          { pregunta: "9 + 6", respuesta: "15" },
-          { pregunta: "11 − 2", respuesta: "9" }
-        ],
-        dificil: [
-          { pregunta: "3²", respuesta: "9" },
-          { pregunta: "√64", respuesta: "8" },
-          { pregunta: "7²", respuesta: "49" },
-          { pregunta: "√25", respuesta: "5" },
-          { pregunta: "4³", respuesta: "64" },
-          { pregunta: "√36", respuesta: "6" },
-          { pregunta: "5²", respuesta: "25" }
-        ]
-      },
-      "2medio": {
-        facil: [
-          { pregunta: "1/2 + 1/2", respuesta: "1" },
-          { pregunta: "3/4 − 1/4", respuesta: "1/2" },
-          { pregunta: "2/3 + 1/3", respuesta: "1" },
-          { pregunta: "5/5", respuesta: "1" },
-          { pregunta: "1/4 + 1/4", respuesta: "1/2" },
-          { pregunta: "2/2", respuesta: "1" },
-          { pregunta: "3/3", respuesta: "1" }
-        ],
-        medio: [
-          { pregunta: "2³", respuesta: "8" },
-          { pregunta: "√16", respuesta: "4" },
-          { pregunta: "3²", respuesta: "9" },
-          { pregunta: "5²", respuesta: "25" },
-          { pregunta: "√49", respuesta: "7" },
-          { pregunta: "4²", respuesta: "16" },
-          { pregunta: "√81", respuesta: "9" }
-        ],
-        dificil: [
-          { pregunta: "x + 3 = 7", respuesta: "x = 4" },
-          { pregunta: "x − 2 = 5", respuesta: "x = 7" },
-          { pregunta: "2x = 10", respuesta: "x = 5" },
-          { pregunta: "x/3 = 4", respuesta: "x = 12" },
-          { pregunta: "3x + 1 = 10", respuesta: "x = 3" },
-          { pregunta: "x − 5 = 0", respuesta: "x = 5" },
-          { pregunta: "2x − 4 = 6", respuesta: "x = 5" }
-        ]
-      },
-      "3medio": {
-        facil: [
-          { pregunta: "Área del cuadrado (lado 4)", respuesta: "16" },
-          { pregunta: "Área del triángulo (b=4, h=3)", respuesta: "6" },
-          { pregunta: "Área del rectángulo (2×5)", respuesta: "10" },
-          { pregunta: "Área del círculo (r=1)", respuesta: "3.14" },
-          { pregunta: "Perímetro de cuadrado (lado 3)", respuesta: "12" },
-          { pregunta: "Área del rombo (d1=6, d2=4)", respuesta: "12" },
-          { pregunta: "Área del trapecio (3+5)×2/2", respuesta: "8" }
-        ],
-        medio: [
-          { pregunta: "f(x) = 2x, f(3)", respuesta: "6" },
-          { pregunta: "f(x) = x + 4, f(1)", respuesta: "5" },
-          { pregunta: "f(x) = x², f(2)", respuesta: "4" },
-          { pregunta: "f(x) = 3x − 1, f(2)", respuesta: "5" },
-          { pregunta: "f(x) = x² − 1, f(3)", respuesta: "8" },
-          { pregunta: "f(x) = 2x + 2, f(0)", respuesta: "2" },
-          { pregunta: "f(x) = 5, f(10)", respuesta: "5" }
-        ],
-        dificil: [
-          { pregunta: "(x+2)(x−3)", respuesta: "x²−x−6" },
-          { pregunta: "x² + 2x + 1", respuesta: "(x+1)²" },
-          { pregunta: "x² − 9", respuesta: "(x+3)(x−3)" },
-          { pregunta: "(x−5)²", respuesta: "x²−10x+25" },
-          { pregunta: "(x+4)²", respuesta: "x²+8x+16" },
-          { pregunta: "(x+2)(x+3)", respuesta: "x²+5x+6" },
-          { pregunta: "x² + 4x + 4", respuesta: "(x+2)²" }
-        ]
-      },
-      "4medio": {
-        facil: [
-          { pregunta: "Prob. cara en moneda", respuesta: "0.5" },
-          { pregunta: "Prob. par en dado", respuesta: "0.5" },
-          { pregunta: "Prob. rojo en baraja", respuesta: "0.5" },
-          { pregunta: "Prob. 1 en dado", respuesta: "1/6" },
-          { pregunta: "Prob. impar en dado", respuesta: "0.5" },
-          { pregunta: "Prob. rey en baraja", respuesta: "4/52" },
-          { pregunta: "Prob. no sacar as", respuesta: "48/52" }
-        ],
-        medio: [
-          { pregunta: "sen(90°)", respuesta: "1" },
-          { pregunta: "cos(0°)", respuesta: "1" },
-          { pregunta: "tan(45°)", respuesta: "1" },
-          { pregunta: "sen(0°)", respuesta: "0" },
-          { pregunta: "cos(180°)", respuesta: "-1" },
-          { pregunta: "sen(30°)", respuesta: "0.5" },
-          { pregunta: "cos(60°)", respuesta: "0.5" }
-        ],
-        dificil: [
-          { pregunta: "d/dx (x²)", respuesta: "2x" },
-          { pregunta: "d/dx (3x)", respuesta: "3" },
-          { pregunta: "d/dx (x³)", respuesta: "3x²" },
-          { pregunta: "d/dx (2x²)", respuesta: "4x" },
-          { pregunta: "d/dx (5x^4)", respuesta: "20x³" },
-          { pregunta: "d/dx (x)", respuesta: "1" },
-          { pregunta: "d/dx (7)", respuesta: "0" }
-        ]
-      }
-    };
 
-    const grid = document.getElementById("grid");
-    const puntajeEl = document.getElementById("puntaje");
-    const maxPuntajeEl = document.getElementById("maxPuntaje");
-    const cursoSelector = document.getElementById("curso");
-    const nivelSelector = document.getElementById("nivel");
+<h1>Memorice Matemático - 1° a 4° Medio</h1>
 
-    let puntaje = 0;
-    let seleccionadas = [];
-    let maxPuntaje = localStorage.getItem("maxPuntaje") || 0;
-    maxPuntajeEl.innerText = maxPuntaje;
+<div id="controls">
+  Curso: 
+  <select id="curso-select">
+    <option value="1medio">1° Medio</option>
+    <option value="2medio">2° Medio</option>
+    <option value="3medio">3° Medio</option>
+    <option value="4medio">4° Medio</option>
+  </select>
+  Dificultad: 
+  <select id="dificultad-select">
+    <option value="facil">Fácil</option>
+    <option value="medio">Medio</option>
+    <option value="dificil">Difícil</option>
+    <option value="extremo">Extremo</option>
+  </select>
+  <button id="start-btn">Iniciar Juego</button>
+</div>
 
-    function cargarJuego(curso, nivel) {
-      grid.innerHTML = "";
-      puntaje = 0;
-      puntajeEl.innerText = puntaje;
-      seleccionadas = [];
+<div id="info-bar">
+  <span id="scoreboard">Puntaje: 0</span>
+  <span id="timer">Tiempo: 00:00</span>
+</div>
 
-      let pares = datos[curso][nivel].slice(0, 7); // 7 pares = 14 cartas
-      let cartas = [];
+<div id="board" class="board-facil"></div>
 
-      pares.forEach(par => {
-        cartas.push({ texto: par.pregunta, valor: par.respuesta });
-        cartas.push({ texto: par.respuesta, valor: par.respuesta });
-      });
+<div id="explanation"></div>
 
-      cartas = cartas.sort(() => 0.5 - Math.random());
+<script>
+  // Banco de ejercicios por curso y dificultad
+  const bancoOperaciones = {
+    "1medio": {
+      "facil": [
+        { pregunta: "Simplifica: (a + b)²", respuesta: "a² + 2ab + b²", explicacion: "Producto notable cuadrado de binomio" },
+        { pregunta: "Suma: 2x + 3x", respuesta: "5x", explicacion: "Suma de términos semejantes" },
+        { pregunta: "Resuelve: x + 3 = 7", respuesta: "4", explicacion: "Despeja x" },
+        { pregunta: "Área rectángulo base 4 cm altura 5 cm", respuesta: "20", explicacion: "Área = base × altura" },
+        { pregunta: "Representa datos en gráfico XY", respuesta: "Puntos en plano", explicacion: "Nube de puntos" },
+        { pregunta: "Sistema: x + y = 3, x - y = 1", respuesta: "x=2, y=1", explicacion: "Suma y resta para despejar" },
+        { pregunta: "Homotecia: escala 2, punto (3,4)", respuesta: "(6,8)", explicacion: "Multiplica coordenadas por escala" },
+        { pregunta: "Simplifica: 3(x + 2)", respuesta: "3x + 6", explicacion: "Distribución" }
+      ],
+      "medio": [
+        { pregunta: "Producto: (x+2)(x+3)", respuesta: "x² + 5x + 6", explicacion: "Multiplica binomios" },
+        { pregunta: "Resuelve sistema: 2x + y = 5, x - y = 1", respuesta: "x=2, y=1", explicacion: "Método sustitución" },
+        { pregunta: "Área triángulo base 6 altura 4", respuesta: "12", explicacion: "Área = (base × altura)/2" },
+        { pregunta: "Representa función lineal y=2x+1", respuesta: "Recta con pendiente 2", explicacion: "Pendiente e intercepto" },
+        { pregunta: "Calcula media de: 2,4,6,8", respuesta: "5", explicacion: "Promedio aritmético" },
+        { pregunta: "Homotecia inversa escala 0.5, punto (6,8)", respuesta: "(3,4)", explicacion: "Multiplica coordenadas por escala" },
+        { pregunta: "Simplifica: (2x)²", respuesta: "4x²", explicacion: "Potencia de producto" },
+        { pregunta: "Suma: 5a - 3a + 2a", respuesta: "4a", explicacion: "Suma términos semejantes" }
+      ],
+      "dificil": [
+        { pregunta: "Resuelve sistema: 3x + 2y = 12, x - y = 1", respuesta: "x=3, y=2", explicacion: "Método eliminación" },
+        { pregunta: "Simplifica: (x + 1)(x² - x + 1)", respuesta: "x³ + 1", explicacion: "Producto de binomios y trinomios" },
+        { pregunta: "Área trapecio bases 3 y 5 altura 4", respuesta: "16", explicacion: "((B + b)/2) × h" },
+        { pregunta: "Representa función cuadrática y = x² - 4x + 3", respuesta: "Parábola", explicacion: "Gráfico función cuadrática" },
+        { pregunta: "Calcula desviación estándar de 2,4,4,4,5,5,7,9", respuesta: "2", explicacion: "Medida de dispersión" },
+        { pregunta: "Homotecia con centro en (0,0) y escala -1", respuesta: "Reflejo respecto al origen", explicacion: "Escala negativa" },
+        { pregunta: "Resuelve ecuación cuadrática x² - 5x + 6 = 0", respuesta: "2 y 3", explicacion: "Factorización" },
+        { pregunta: "Representa nube de puntos y tendencia", respuesta: "Datos dispersos con línea", explicacion: "Gráficos XY" }
+      ],
+      "extremo": [
+        { pregunta: "Demuestra identidad: (a+b)³", respuesta: "a³ + 3a²b + 3ab² + b³", explicacion: "Cubo de binomio" },
+        { pregunta: "Resuelve sistema 3x + 2y - z = 7", respuesta: "Varía", explicacion: "Sistema con 3 variables" },
+        { pregunta: "Calcula inversa función f(x) = 2x + 3", respuesta: "(x - 3)/2", explicacion: "Despeja x" },
+        { pregunta: "Aplica homotecia con centro fuera del origen", respuesta: "Varía", explicacion: "Escala con traslación" },
+        { pregunta: "Analiza correlación nube de puntos", respuesta: "Positiva, negativa o nula", explicacion: "Interpretación gráfica" },
+        { pregunta: "Resuelve sistema no lineal simple", respuesta: "Varía", explicacion: "Ecuaciones no lineales" },
+        { pregunta: "Calcula área bajo curva poligonal", respuesta: "Varía", explicacion: "Aproximación área" },
+        { pregunta: "Demuestra propiedad distributiva", respuesta: "a(b + c) = ab + ac", explicacion: "Propiedad algebraica" }
+      ]
+    },
+    "2medio": {
+      "facil": [
+        { pregunta: "Calcula raíz cuadrada de 49", respuesta: "7", explicacion: "Raíz cuadrada exacta" },
+        { pregunta: "Evalúa: 2³", respuesta: "8", explicacion: "Potencia" },
+        { pregunta: "Resuelve: log₁₀100", respuesta: "2", explicacion: "Logaritmo base 10" },
+        { pregunta: "Simplifica: (x²)³", respuesta: "x⁶", explicacion: "Potencia de potencia" },
+        { pregunta: "Función cuadrática: y = x²", respuesta: "Parábola", explicacion: "Gráfico básico" },
+        { pregunta: "Calcula cambio porcentual de 50 a 60", respuesta: "20%", explicacion: "Incremento porcentual" },
+        { pregunta: "Suma: 3x² + 2x²", respuesta: "5x²", explicacion: "Términos semejantes" },
+        { pregunta: "Ecuación cuadrática: x² - 9 = 0", respuesta: "3 y -3", explicacion: "Raíces reales" }
+      ],
+      "medio": [
+        { pregunta: "Calcula log₂8", respuesta: "3", explicacion: "Potencia base 2" },
+        { pregunta: "Resuelve función inversa f(x) = 3x - 5", respuesta: "(x + 5)/3", explicacion: "Despeja x" },
+        { pregunta: "Calcula área triángulo base 10 altura 6", respuesta: "30", explicacion: "Área básica" },
+        { pregunta: "Simplifica expresión: (2x)(3x²)", respuesta: "6x³", explicacion: "Multiplicación potencias" },
+        { pregunta: "Calcula razón trigonométrica seno 30°", respuesta: "0.5", explicacion: "Definición seno" },
+        { pregunta: "Calcula variable aleatoria finita", respuesta: "Varía", explicacion: "Ejemplo variable discreta" },
+        { pregunta: "Ecuación cuadrática: x² + 5x + 6 = 0", respuesta: "-2 y -3", explicacion: "Raíces por factorización" },
+        { pregunta: "Calcula función logarítmica y = log x", respuesta: "Definición", explicacion: "Propiedades logaritmos" }
+      ],
+      "dificil": [
+        { pregunta: "Calcula potencia con exponente fraccionario: 27^(1/3)", respuesta: "3", explicacion: "Raíz cúbica" },
+        { pregunta: "Resuelve ecuación cuadrática con fórmula", respuesta: "Varía", explicacion: "Fórmula general" },
+        { pregunta: "Calcula cambio porcentual compuesto", respuesta: "Varía", explicacion: "Interés compuesto" },
+        { pregunta: "Calcula función inversa de y = (x - 1)²", respuesta: "√y + 1", explicacion: "Raíz cuadrada" },
+        { pregunta: "Calcula razones trigonométricas tangente 45°", respuesta: "1", explicacion: "Definición tangente" },
+        { pregunta: "Calcula variable aleatoria discreta", respuesta: "Varía", explicacion: "Ejemplo concreto" },
+        { pregunta: "Deriva función básica f(x) = x²", respuesta: "2x", explicacion: "Regla potencia" },
+        { pregunta: "Simplifica expresión logarítmica", respuesta: "Varía", explicacion: "Propiedades logaritmos" }
+      ],
+      "extremo": [
+        { pregunta: "Resuelve ecuación logarítmica avanzada", respuesta: "Varía", explicacion: "Problema complejo" },
+        { pregunta: "Calcula función exponencial y = e^x", respuesta: "Definición", explicacion: "Constante e" },
+        { pregunta: "Calcula derivada compuesta (regla cadena)", respuesta: "Varía", explicacion: "Derivación avanzada" },
+        { pregunta: "Calcula integral definida ∫_0^1 x² dx", respuesta: "1/3", explicacion: "Integral básica" },
+        { pregunta: "Calcula razón trigonométrica coseno 60°", respuesta: "0.5", explicacion: "Definición coseno" },
+        { pregunta: "Calcula variable aleatoria continua", respuesta: "Varía", explicacion: "Ejemplo variable continua" },
+        { pregunta: "Calcula límite lim x→0 (sin x)/x", respuesta: "1", explicacion: "Límite fundamental" },
+        { pregunta: "Resuelve ecuación diferencial básica", respuesta: "Varía", explicacion: "Problema diferencial" }
+      ]
+    },
+    "3medio": {
+      "facil": [
+        { pregunta: "Calcula i²", respuesta: "-1", explicacion: "Por definición i² = -1" },
+        { pregunta: "Suma complejos: (3+2i)+(1+4i)", respuesta: "4+6i", explicacion: "Suma parte real e imaginaria" },
+        { pregunta: "Multiplica (1+i)(1 - i)", respuesta: "2", explicacion: "Producto conjugados" },
+        { pregunta: "Media de: 2,4,6,8,10", respuesta: "6", explicacion: "Suma y divide entre cantidad" },
+        { pregunta: "Moda de: 1,2,2,3,3,3", respuesta: "3", explicacion: "Número que más se repite" },
+        { pregunta: "Área circunferencia radio 7 cm", respuesta: "153.94", explicacion: "πr² = 3.14×49" },
+        { pregunta: "Resuelve: e^0", respuesta: "1", explicacion: "Cualquier número a la 0 es 1" },
+        { pregunta: "Calcula log₁₀1", respuesta: "0", explicacion: "log 1 es siempre 0" },
+        { pregunta: "Resuelve x² + 2x + 1 = 0", respuesta: "-1", explicacion: "Perfect square trinomial" },
+        { pregunta: "Encuentra inversa f(x) = x + 3", respuesta: "x - 3", explicacion: "Despeja x" }
+      ],
+      "medio": [
+        { pregunta: "Multiplica: (2+3i)(1 - 2i)", respuesta: "8 - i", explicacion: "Distribuye y simplifica" },
+        { pregunta: "Calcula desviación estándar", respuesta: "Varía", explicacion: "Medida de dispersión" },
+        { pregunta: "Ecuación circunferencia centro (0,0) radio 5", respuesta: "x² + y² = 25", explicacion: "Ecuación estándar" },
+        { pregunta: "Resuelve f(x)=x² - 4x + 3", respuesta: "1 y 3", explicacion: "Factoriza o usa fórmula" },
+        { pregunta: "Calcula log e e", respuesta: "1", explicacion: "log e base e es 1" },
+        { pregunta: "Calcula función exponencial", respuesta: "y = e^x", explicacion: "Definición" },
+        { pregunta: "Suma: 2 + 2i + 3 - i", respuesta: "5 + i", explicacion: "Suma parte real e imaginaria" },
+        { pregunta: "Area triángulo base 10 cm altura 7 cm", respuesta: "35", explicacion: "Área = base × altura / 2" },
+        { pregunta: "Calcula f'(x) de x²", respuesta: "2x", explicacion: "Derivada básica" },
+        { pregunta: "Representa función logarítmica", respuesta: "y = log x", explicacion: "Definición" }
+      ],
+      "dificil": [
+        { pregunta: "Multiplica y simplifica: (3+4i)(3 - 4i)", respuesta: "25", explicacion: "Producto conjugados: a²+b²" },
+        { pregunta: "Calcula varianza de conjunto de datos", respuesta: "Varía", explicacion: "Medida de dispersión" },
+        { pregunta: "Ecuación circunferencia centro (2,3) radio 4", respuesta: "(x-2)² + (y-3)² = 16", explicacion: "Ecuación general" },
+        { pregunta: "Calcula f''(x) de x³", respuesta: "6x", explicacion: "Segunda derivada" },
+        { pregunta: "Resuelve ecuación exponencial", respuesta: "Varía", explicacion: "Función exponencial" },
+        { pregunta: "Calcula logaritmo natural ln(e⁵)", respuesta: "5", explicacion: "Propiedad logaritmos" },
+        { pregunta: "Resuelve sistema ecuaciones complejas", respuesta: "Varía", explicacion: "Sistema complejo" },
+        { pregunta: "Deriva función logarítmica", respuesta: "1/x", explicacion: "Derivada log" },
+        { pregunta: "Calcula límite lim x→∞ (1 + 1/x)^x", respuesta: "e", explicacion: "Definición de e" },
+        { pregunta: "Área superficie esfera radio 3", respuesta: "113.1", explicacion: "4πr²" }
+      ],
+      "extremo": [
+        { pregunta: "Calcula integral ∫ x² dx", respuesta: "x³/3 + C", explicacion: "Integral básica" },
+        { pregunta: "Resuelve ecuación diferencial simple", respuesta: "Varía", explicacion: "Derivada e integral" },
+        { pregunta: "Demuestra identidad trigonométrica", respuesta: "Varía", explicacion: "Relación trigonométrica" },
+        { pregunta: "Calcula transformada de Fourier básica", respuesta: "Varía", explicacion: "Análisis de señales" },
+        { pregunta: "Resuelve sistema no lineal complejo", respuesta: "Varía", explicacion: "Sistemas avanzados" },
+        { pregunta: "Calcula límite complejo", respuesta: "Varía", explicacion: "Límites en cálculo" },
+        { pregunta: "Calcula serie de Fourier", respuesta: "Varía", explicacion: "Series armónicas" },
+        { pregunta: "Resuelve función implícita", respuesta: "Varía", explicacion: "Funciones implícitas" }
+      ]
+    },
+    "4medio": {
+      "facil": [
+        { pregunta: "Simplifica: (x + y)²", respuesta: "x² + 2xy + y²", explicacion: "Producto notable" },
+        { pregunta: "Calcula área triángulo base 5 altura 8", respuesta: "20", explicacion: "Área básica" },
+        { pregunta: "Suma: 3x² + 4x²", respuesta: "7x²", explicacion: "Términos semejantes" },
+        { pregunta: "Resuelve: x - 4 = 10", respuesta: "14", explicacion: "Despeja x" },
+        { pregunta: "Representa función lineal", respuesta: "y = mx + b", explicacion: "Forma básica" },
+        { pregunta: "Calcula probabilidad simple", respuesta: "Varía", explicacion: "Eventos simples" },
+        { pregunta: "Calcula media y mediana", respuesta: "Varía", explicacion: "Medidas centrales" },
+        { pregunta: "Calcula volumen cilindro radio 3 altura 7", respuesta: "197.92", explicacion: "πr²h" }
+      ],
+      "medio": [
+        { pregunta: "Resuelve ecuación cuadrática", respuesta: "Varía", explicacion: "Solución con fórmula" },
+        { pregunta: "Calcula función inversa", respuesta: "Varía", explicacion: "Despeja x" },
+        { pregunta: "Calcula razón trigonométrica", respuesta: "Varía", explicacion: "Seno, coseno o tangente" },
+        { pregunta: "Calcula probabilidad compuesta", respuesta: "Varía", explicacion: "Eventos compuestos" },
+        { pregunta: "Calcula desviación estándar", respuesta: "Varía", explicacion: "Medida dispersión" },
+        { pregunta: "Simplifica expresión algebraica", respuesta: "Varía", explicacion: "Factorización y suma" },
+        { pregunta: "Calcula función exponencial", respuesta: "Varía", explicacion: "Definición y propiedades" },
+        { pregunta: "Resuelve sistema de ecuaciones", respuesta: "Varía", explicacion: "Método sustitución o eliminación" }
+      ],
+      "dificil": [
+        { pregunta: "Calcula integral definida", respuesta: "Varía", explicacion: "Cálculo integral" },
+        { pregunta: "Calcula derivada de función compuesta", respuesta: "Varía", explicacion: "Regla cadena" },
+        { pregunta: "Resuelve ecuación diferencial básica", respuesta: "Varía", explicacion: "Derivadas e integrales" },
+        { pregunta: "Calcula serie de Taylor", respuesta: "Varía", explicacion: "Expansión de funciones" },
+        { pregunta: "Calcula límite complejo", respuesta: "Varía", explicacion: "Límites en cálculo" },
+        { pregunta: "Calcula probabilidad condicional", respuesta: "Varía", explicacion: "Eventos dependientes" },
+        { pregunta: "Simplifica función trigonométrica", respuesta: "Varía", explicacion: "Identidades trigonométricas" },
+        { pregunta: "Calcula volumen sólido revolución", respuesta: "Varía", explicacion: "Cálculo integral" }
+      ],
+      "extremo": [
+        { pregunta: "Demuestra teorema algebraico", respuesta: "Varía", explicacion: "Prueba formal" },
+        { pregunta: "Resuelve ecuación diferencial avanzada", respuesta: "Varía", explicacion: "Cálculo avanzado" },
+        { pregunta: "Calcula transformada Laplace", respuesta: "Varía", explicacion: "Análisis matemático" },
+        { pregunta: "Demuestra identidad trigonométrica avanzada", respuesta: "Varía", explicacion: "Relaciones trigonométricas" },
+        { pregunta: "Calcula integral múltiple", respuesta: "Varía", explicacion: "Cálculo multivariable" },
+        { pregunta: "Resuelve sistema ecuaciones no lineales", respuesta: "Varía", explicacion: "Métodos avanzados" },
+        { pregunta: "Calcula serie de Fourier avanzada", respuesta: "Varía", explicacion: "Análisis armónico" },
+        { pregunta: "Analiza función implícita avanzada", respuesta: "Varía", explicacion: "Cálculo avanzado" }
+      ]
+    }
+  };
 
-      cartas.forEach((carta) => {
-        const div = document.createElement("div");
-        div.classList.add("card");
-        div.dataset.valor = carta.valor;
-        div.innerText = "?";
+  const tiemposDificultad = {
+    facil: 8 * 60,
+    medio: 6 * 60,
+    dificil: 4 * 60,
+    extremo: 3 * 60
+  };
 
-        div.addEventListener("click", () => {
-          if (div.innerText === "?" && seleccionadas.length < 2) {
-            div.innerText = carta.texto;
-            seleccionadas.push({ div, valor: carta.valor });
+  const board = document.getElementById("board");
+  const cursoSelect = document.getElementById("curso-select");
+  const dificultadSelect = document.getElementById("dificultad-select");
+  const startBtn = document.getElementById("start-btn");
+  const explanationDiv = document.getElementById("explanation");
+  const scoreboard = document.getElementById("scoreboard");
+  const timerDisplay = document.getElementById("timer");
 
-            if (seleccionadas.length === 2) {
-              setTimeout(() => {
-                const [a, b] = seleccionadas;
-                if (a.valor === b.valor) {
-                  a.div.classList.add("matched");
-                  b.div.classList.add("matched");
-                  puntaje += 10;
-                } else {
-                  a.div.classList.add("wrong");
-                  b.div.classList.add("wrong");
-                  setTimeout(() => {
-                    a.div.innerText = "?";
-                    b.div.innerText = "?";
-                    a.div.classList.remove("wrong");
-                    b.div.classList.remove("wrong");
-                  }, 300);
-                  puntaje -= 2;
-                }
-                puntajeEl.innerText = puntaje;
-                if (puntaje > maxPuntaje) {
-                  maxPuntaje = puntaje;
-                  localStorage.setItem("maxPuntaje", puntaje);
-                  maxPuntajeEl.innerText = puntaje;
-                }
-                seleccionadas = [];
-              }, 500);
-            }
-          }
-        });
+  let cursoActual = cursoSelect.value;
+  let dificultadActual = dificultadSelect.value;
+  let puntaje = 0;
+  let cartasSeleccionadas = [];
+  let temporizador = null;
+  let tiempoRestante = 0;
+  let bloqueoClick = false;
 
-        grid.appendChild(div);
-      });
-    }
+  function mezclarArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
 
-    function reiniciarJuego() {
-      cargarJuego(cursoSelector.value, nivelSelector.value);
-    }
+  function crearCartas() {
+    // Reiniciar variables
+    puntaje = 0;
+    actualizarPuntaje();
+    cartasSeleccionadas = [];
+    explanationDiv.textContent = "";
+    clearInterval(temporizador);
 
-    cursoSelector.addEventListener("change", () => reiniciarJuego());
-    nivelSelector.addEventListener("change", () => reiniciarJuego());
+    cursoActual = cursoSelect.value;
+    dificultadActual = dificultadSelect.value;
 
-    cargarJuego("1medio", "facil");
-  </script>
+    const ejercicios = bancoOperaciones[cursoActual][dificultadActual];
+    if (!ejercicios) {
+      alert("No hay ejercicios para esta combinación.");
+      return;
+    }
+
+    // Limpiar tablero
+    board.innerHTML = "";
+    board.className = "board-" + dificultadActual;
+
+    // Seleccionar 8 pares de ejercicios para total 16 cartas
+    const seleccion = mezclarArray(ejercicios).slice(0, 8);
+
+    // Crear cartas: para cada ejercicio, crear dos cartas (pregunta y respuesta)
+    const cartas = [];
+    seleccion.forEach((item, index) => {
+      cartas.push({
+        id: index,
+        tipo: "pregunta",
+        text: item.pregunta,
+        explicacion: item.explicacion
+      });
+      cartas.push({
+        id: index,
+        tipo: "respuesta",
+        text: item.respuesta,
+        explicacion: item.explicacion
+      });
+    });
+
+    mezclarArray(cartas);
+
+    // Crear elementos DOM
+    cartas.forEach(c => {
+      const cardDiv = document.createElement("div");
+      cardDiv.classList.add("card", "flipped");
+      cardDiv.dataset.id = c.id;
+      cardDiv.dataset.tipo = c.tipo;
+      cardDiv.dataset.text = c.text;
+      cardDiv.dataset.explicacion = c.explicacion;
+      cardDiv.textContent = c.text; // texto visible al inicio
+      cardDiv.addEventListener("click", manejarClickCarta);
+      board.appendChild(cardDiv);
+    });
+
+    iniciarTemporizador();
+  }
+
+  function manejarClickCarta(e) {
+    if (bloqueoClick) return;
+
+    const carta = e.currentTarget;
+    if (carta.classList.contains("matched")) return;
+
+    cartasSeleccionadas.push(carta);
+    carta.classList.add("flipped");
+
+    if (cartasSeleccionadas.length === 2) {
+      bloqueoClick = true;
+      const [primera, segunda] = cartasSeleccionadas;
+
+      if (
+        primera.dataset.id === segunda.dataset.id &&
+        primera.dataset.tipo !== segunda.dataset.tipo
+      ) {
+        // Par correcto
+        primera.classList.add("matched");
+        segunda.classList.add("matched");
+        puntaje += 10;
+        explanationDiv.textContent = "¡Correcto! " + primera.dataset.explicacion;
+
+        setTimeout(() => {
+          bloqueoClick = false;
+          explanationDiv.textContent = "";
+          revisarFinJuego();
+        }, 1500);
+      } else {
+        // Par incorrecto
+        puntaje = Math.max(0, puntaje - 5);
+        explanationDiv.textContent = "Incorrecto. " + (segunda.dataset.explicacion || "Revisa bien el ejercicio.");
+
+        primera.classList.add("wrong");
+        segunda.classList.add("wrong");
+
+        setTimeout(() => {
+          primera.classList.remove("flipped", "wrong");
+          segunda.classList.remove("flipped", "wrong");
+          explanationDiv.textContent = "";
+          bloqueoClick = false;
+        }, 1500);
+      }
+      actualizarPuntaje();
+      cartasSeleccionadas = [];
+    }
+  }
+
+  function actualizarPuntaje() {
+    scoreboard.textContent = `Puntaje: ${puntaje}`;
+  }
+
+  function revisarFinJuego() {
+    const todasCartas = Array.from(board.querySelectorAll(".card"));
+    if (todasCartas.every(c => c.classList.contains("matched"))) {
+      clearInterval(temporizador);
+      explanationDiv.textContent = "¡Felicidades! Terminaste el juego.";
+      bloquearCartas();
+    }
+  }
+
+  function iniciarTemporizador() {
+    clearInterval(temporizador);
+    tiempoRestante = tiemposDificultad[dificultadActual];
+    actualizarTiempo();
+    temporizador = setInterval(() => {
+      tiempoRestante--;
+      actualizarTiempo();
+      if (tiempoRestante <= 0) {
+        clearInterval(temporizador);
+        explanationDiv.textContent = "¡Se acabó el tiempo!";
+        bloquearCartas();
+        bloqueoClick = true;
+      }
+    }, 1000);
+  }
+
+  function actualizarTiempo() {
+    const minutos = Math.floor(tiempoRestante / 60).toString().padStart(2, "0");
+    const segundos = (tiempoRestante % 60).toString().padStart(2, "0");
+    timerDisplay.textContent = `Tiempo: ${minutos}:${segundos}`;
+  }
+
+  function bloquearCartas() {
+    const todasCartas = Array.from(board.querySelectorAll(".card"));
+    todasCartas.forEach(c => {
+      c.removeEventListener("click", manejarClickCarta);
+      c.classList.add("flipped");
+      c.textContent = c.dataset.text;
+    });
+  }
+
+  startBtn.addEventListener("click", crearCartas);
+
+  cursoSelect.addEventListener("change", () => {
+    cursoActual = cursoSelect.value;
+  });
+
+  dificultadSelect.addEventListener("change", () => {
+    dificultadActual = dificultadSelect.value;
+    board.className = "board-" + dificultadActual;
+  });
+
+  // Inicializar color y timer vacío
+  board.className = "board-" + dificultadActual;
+  timerDisplay.textContent = "Tiempo: 00:00";
+</script>
+
 </body>
 </html>
